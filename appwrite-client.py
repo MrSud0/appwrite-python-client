@@ -381,66 +381,66 @@ def create_documents_with_relationships(session, yaml_file, project_id, database
 
 # --- New functions for team management ---
 
-def create_team(session, project_id, name, roles, endpoint"):
-    """
-    Create a new team with the specified name and roles.
+# def create_team(session, project_id, name, roles, endpoint):
+#     """
+#     Create a new team with the specified name and roles.
     
-    :param session: The authenticated requests session.
-    :param project_id: The Appwrite project ID.
-    :param name: The name of the team.
-    :param roles: A list of roles (strings) for the team. These roles will be used in permission strings.
-    :param endpoint: The Appwrite endpoint URL.
-    :return: The team object if created successfully, or None.
-    """
-    url = f"{endpoint}/teams"
-    headers = {
-        "X-Appwrite-Project": project_id,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "name": name,
-        "roles": roles
-    }
-    response = session.post(url, headers=headers, json=data)
-    if response.status_code == 201:
-        team = response.json()
-        print(f"✅ Team '{name}' created successfully with ID: {team['$id']}")
-        return team
-    else:
-        print(f"❌ Failed to create team '{name}': {response.text}")
-        return None
+#     :param session: The authenticated requests session.
+#     :param project_id: The Appwrite project ID.
+#     :param name: The name of the team.
+#     :param roles: A list of roles (strings) for the team. These roles will be used in permission strings.
+#     :param endpoint: The Appwrite endpoint URL.
+#     :return: The team object if created successfully, or None.
+#     """
+#     url = f"{endpoint}/teams"
+#     headers = {
+#         "X-Appwrite-Project": project_id,
+#         "Content-Type": "application/json"
+#     }
+#     data = {
+#         "name": name,
+#         "roles": roles
+#     }
+#     response = session.post(url, headers=headers, json=data)
+#     if response.status_code == 201:
+#         team = response.json()
+#         print(f"✅ Team '{name}' created successfully with ID: {team['$id']}")
+#         return team
+#     else:
+#         print(f"❌ Failed to create team '{name}': {response.text}")
+#         return None
 
-def add_user_to_team(session, project_id, team_id, email, roles, callback_url, endpoint):
-    """
-    Add a user to an existing team with the given roles.
+# def add_user_to_team(session, project_id, team_id, email, roles, callback_url, endpoint):
+#     """
+#     Add a user to an existing team with the given roles.
     
-    :param session: The authenticated requests session.
-    :param project_id: The Appwrite project ID.
-    :param team_id: The ID of the team.
-    :param email: The email of the user to add.
-    :param roles: A list of roles (strings) to assign to the user within the team.
-    :param callback_url: A URL the user will be redirected to after accepting the team invitation.
-    :param endpoint: The Appwrite endpoint URL.
-    :return: The member object if added successfully, or None.
-    """
-    url = f"{endpoint}/teams/{team_id}/members"
-    headers = {
-        "X-Appwrite-Project": project_id,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "email": email,
-        "roles": roles,
-        "url": callback_url
-    }
-    response = session.post(url, headers=headers, json=data)
-    if response.status_code == 201:
-        member = response.json()
-        print(f"✅ Member '{email}' added to team with ID: {member['$id']}")
-        return member
-    else:
-        print(f"❌ Failed to add user to team: {response.text}")
-        return None
+#     :param session: The authenticated requests session.
+#     :param project_id: The Appwrite project ID.
+#     :param team_id: The ID of the team.
+#     :param email: The email of the user to add.
+#     :param roles: A list of roles (strings) to assign to the user within the team.
+#     :param callback_url: A URL the user will be redirected to after accepting the team invitation.
+#     :param endpoint: The Appwrite endpoint URL.
+#     :return: The member object if added successfully, or None.
+#     """
+#     url = f"{endpoint}/teams/{team_id}/members"
+#     headers = {
+#         "X-Appwrite-Project": project_id,
+#         "Content-Type": "application/json"
+#     }
+#     data = {
+#         "email": email,
+#         "roles": roles,
+#         "url": callback_url
+#     }
+#     response = session.post(url, headers=headers, json=data)
+#     if response.status_code == 201:
+#         member = response.json()
+#         print(f"✅ Member '{email}' added to team with ID: {member['$id']}")
+#         return member
+#     else:
+#         print(f"❌ Failed to add user to team: {response.text}")
+#         return None
 
 def generate_team_permissions(team_id):
     """
@@ -483,7 +483,7 @@ if __name__ == "__main__":
     email = args.email or os.environ.get("APPWRITE_EMAIL")
     password = args.password or os.environ.get("APPWRITE_PASSWORD")
     project_id = args.project_id or os.environ.get("APPWRITE_PROJECT_ID")
-    endpoint = args.email or os.environ.get("APPWRITE_API_ENDPOINT")
+    endpoint = os.environ.get("APPWRITE_API_ENDPOINT")
     
     if not email or not password or not project_id:
         print("Error: Missing credentials. Provide --email, --password, and --project-id or set them in .env/environment variables.")
@@ -599,7 +599,9 @@ if __name__ == "__main__":
             "Space": "67e93f0e003422c142d2",
             "TimelineNode": "67e94422000de551b64a",
             "nezuko": "67fbb8b30015f0e807c6",
-            "Properties": "67f2ac3000218cb04d4e"
+            "Properties": "67f2ac3000218cb04d4e",
+            "InvestmentStrategy": "67e94032001f3cdd2781",
+            "Neighbourhood": "67e941e5003bd086de54"
         }
         create_documents_with_relationships(session, args.yaml_file, project_id, args.database_id, collection_mapping, endpoint)
         sys.exit(0)    
