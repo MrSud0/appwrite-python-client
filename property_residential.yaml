@@ -1,0 +1,87 @@
+# --- Phase One: Child Documents ---
+Children:
+  - collection_name: InvestmentStrategy
+    data: &strategy
+      InvestmentStrategyType: "fix-n-slip"
+      name: "Urban Residential"
+      description: "Balanced investment in premium urban residential units with stable rental demand."
+  - collection_name: Space
+    data: &space
+      spaceType: "bedroom"
+      count: 12
+  - collection_name: Country
+    data: &country
+      name: "Greece"
+      shortName: "GR"
+      icon: "🇬🇷"
+  - collection_name: Neighbourhood
+    data: &neighbourhood
+      name: "Glyfada"
+      url: "http://example.com/glyfada"
+      description: "Upscale coastal suburb of Athens with beaches and high-end amenities."
+  - collection_name: TimelineNode
+    data: &timeline
+      header: "Construction Complete"
+      date: "2025-07-20T10:00:00Z"
+      highlightedInfoIcon: "🏢"
+      highlightedInfoLabel: "Ready"
+      description: "Building completion and handover from developer."
+      TimelineNodeState: "complete"
+
+# --- Phase Two: Parent Document (Properties) ---
+Parent:
+  - collection_name: Properties
+    data:
+      name: "Sea Breeze Residences"
+      city: "Athens"
+      addressCommunity: "Glyfada"
+      unitNumber: null
+      numberOfBedrooms: 28
+      numberOfInvestors: 35
+      totalViews: 5600
+      isBookmarked: false
+      fundedDate: "2024-11-10T09:15:00Z"
+      exitDate: "2034-11-10T09:15:00Z"
+      price: 4500000.0
+      netYieldPercentage: 5.2
+      totalReturnPercetage: 24.7
+      totalInvested: 4200000.0
+      totalInvestedPercentage: 93.33
+      category: "residential"
+      investmentStrategy:
+        value: *strategy
+        relation: "oneToOne"
+      area: 2400.0
+      rentalType: "long-term-rental"
+      grossYieldPercentage: 6.3
+      numberOfCurrentInvestors: 35
+      description: "Modern apartment complex comprising 12 units (4 one-bedroom, 6 two-bedroom, 2 three-bedroom penthouses) near Glyfada beach. Features underground parking, swimming pool, gym, and 24-hour security. High rental demand from professionals and expatriates."
+      documents: []
+      fundingTimelineEvent: []
+      annualRent: 283500.0
+      transactionCost: 60000.0
+      investmentCost: 250000.0
+      annualServiceCharges: 42000.0
+      annualManagementMaintenance: 36000.0
+      netIncome: 234000.0
+      state: "renovation"
+      InvestmentStatus: "available"
+      spaces:
+        value: *space
+        relation: "manyToMany"
+      country:
+        value: *country
+        relation: "manyToOne"
+      location:
+        - "37.8691,23.7503"
+      neighbourhood:
+        value: *neighbourhood
+        relation: "manyToOne"
+      monthlyCashflow: 19500.0
+      appreciation: 3.6
+      grossSellPrice: 5200000.0
+      grossTotalRentalIncome: 2835000.0
+      latestValuation: 4650000.0
+      TimelineNode:
+        value: *timeline
+        relation: "oneToMany"

@@ -1,0 +1,89 @@
+# --- Phase One: Child Documents ---
+Children:
+  - collection_name: InvestmentStrategy
+    data: &strategy
+      InvestmentStrategyType: "balanced"
+      name: "Green Energy"
+      description: "Sustainable investment in renewable energy with reliable income from power generation."
+  - collection_name: Space
+    data: &space
+      spaceType: "solar-panel"
+      count: 1
+  - collection_name: Country
+    data: &country
+      name: "Greece"
+      shortName: "GR"
+      icon: "🇬🇷"
+  - collection_name: Neighbourhood
+    data: &neighbourhood
+      name: "Crete"
+      url: "http://example.com/crete"
+      description: "Southern island with excellent solar potential and renewable energy incentives."
+  - collection_name: TimelineNode
+    data: &timeline
+      header: "Grid Connection"
+      date: "2025-06-15T08:00:00Z"
+      highlightedInfoIcon: "☀️"
+      highlightedInfoLabel: "Online"
+      description: "Solar farm connected to the national grid and generating income."
+      TimelineNodeState: "active"
+
+# --- Phase Two: Parent Document (Properties) ---
+Parent:
+  - collection_name: Properties
+    data:
+      name: "Helios Solar Park"
+      city: "Heraklion"
+      addressCommunity: "Messara Plain"
+      unitNumber: null
+      numberOfBedrooms: 0
+      numberOfInvestors: 45
+      totalViews: 3250
+      isBookmarked: true
+      fundedDate: "2025-01-15T09:30:00Z"
+      exitDate: "2045-01-15T09:30:00Z"
+      price: 2800000.0
+      netYieldPercentage: 8.4
+      totalReturnPercetage: 22.5
+      totalInvested: 2600000.0
+      totalInvestedPercentage: 92.86
+      category: "energy"
+      investmentStrategy:
+        value: *strategy
+        relation: "oneToOne"
+      area: 80000.0
+      rentalType: "energy"
+      grossYieldPercentage: 9.7
+      numberOfCurrentInvestors: 45
+      description: "5MW solar farm installation on agricultural land with 20-year power purchase agreement with the national grid. Features latest bifacial panel technology with tracking system for optimal energy capture. Benefits from Greek renewable energy subsidies."
+      documents: []
+      fundingTimelineEvent: []
+      annualRent: 0.0
+      transactionCost: 35000.0
+      investmentCost: 180000.0
+      annualServiceCharges: 15000.0
+      annualManagementMaintenance: 42000.0
+      netIncome: 235000.0
+      state: "rented"
+      InvestmentStatus: "funded"
+      spaces:
+        value: *space
+        relation: "manyToMany"
+      country:
+        value: *country
+        relation: "manyToOne"
+      location:
+        - "35.0401,25.0114"
+      neighbourhood:
+        value: *neighbourhood
+        relation: "manyToOne"
+      monthlyCashflow: 19583.33
+      appreciation: 1.2
+      grossSellPrice: 0.0
+      grossTotalRentalIncome: 0.0
+      latestValuation: 2850000.0
+      TimelineNode:
+        value: *timeline
+        relation: "oneToMany"
+      images:
+       - 680e3ab1002abb03026b

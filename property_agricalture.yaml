@@ -1,0 +1,89 @@
+# --- Phase One: Child Documents ---
+Children:
+  - collection_name: InvestmentStrategy
+    data: &strategy
+      InvestmentStrategyType: "balanced"
+      name: "Agricultural Income"
+      description: "Long-term agricultural investment with steady income from olive oil production."
+  - collection_name: Space
+    data: &space
+      spaceType: "agricultural"
+      count: 1
+  - collection_name: Country
+    data: &country
+      name: "Greece"
+      shortName: "GR"
+      icon: "🇬🇷"
+  - collection_name: Neighbourhood
+    data: &neighbourhood
+      name: "Kalamata Region"
+      url: "http://example.com/kalamata"
+      description: "Famous olive-producing region in the Peloponnese."
+  - collection_name: TimelineNode
+    data: &timeline
+      header: "Acquisition Complete"
+      date: "2025-03-10T09:00:00Z"
+      highlightedInfoIcon: "🌳"
+      highlightedInfoLabel: "Productive"
+      description: "Mature olive trees already producing high-quality oil."
+      TimelineNodeState: "active"
+
+# --- Phase Two: Parent Document (Properties) ---
+Parent:
+  - collection_name: Properties
+    data:
+      name: "Premium Olive Grove Estate"
+      city: "Kalamata"
+      addressCommunity: "Verga"
+      unitNumber: null
+      numberOfBedrooms: 0
+      numberOfInvestors: 12
+      totalViews: 1850
+      isBookmarked: true
+      fundedDate: "2025-02-01T08:00:00Z"
+      exitDate: "2045-02-01T08:00:00Z"
+      price: 320000.0
+      netYieldPercentage: 4.2
+      totalReturnPercetage: 18.5
+      totalInvested: 320000.0
+      totalInvestedPercentage: 100.0
+      category: "agricultural"
+      investmentStrategy:
+        value: *strategy
+        relation: "oneToOne"
+      area: 25000.0
+      rentalType: "agricultural"
+      grossYieldPercentage: 5.1
+      numberOfCurrentInvestors: 12
+      description: "Premium olive grove with 450 mature trees of Kalamata and Koroneiki varieties, producing award-winning extra virgin olive oil. Includes irrigation system and small storage facility."
+      documents: []
+      fundingTimelineEvent: []
+      annualRent: 0.0
+      transactionCost: 3500.0
+      investmentCost: 15000.0
+      annualServiceCharges: 2000.0
+      annualManagementMaintenance: 8000.0
+      netIncome: 13500.0
+      state: "ready"
+      InvestmentStatus: "funded"
+      spaces:
+        value: *space
+        relation: "manyToMany"
+      country:
+        value: *country
+        relation: "manyToOne"
+      location:
+        - "37.0389,22.1142"
+      neighbourhood:
+        value: *neighbourhood
+        relation: "manyToOne"
+      monthlyCashflow: 1125.0
+      appreciation: 2.1
+      grossSellPrice: 0.0
+      grossTotalRentalIncome: 0.0
+      latestValuation: 325000.0
+      TimelineNode:
+        value: *timeline
+        relation: "oneToMany"
+      images:
+        - 680e3bc3002ade1b3a17
