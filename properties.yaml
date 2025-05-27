@@ -1,0 +1,87 @@
+# --- Phase One: Child Documents ---
+Children:
+  - collection_name: InvestmentStrategy
+    data: &strategy
+      InvestmentStrategyType: "balanced"
+      name: "Conservative Strategy"
+      description: "A conservative investment strategy."
+  - collection_name: Space
+    data: &space
+      spaceType: "living-room"
+      count: 2
+  - collection_name: Country
+    data: &country
+      name: "Greece"
+      shortName: "GR"
+      icon: "🇬🇷"
+  - collection_name: Neighbourhood
+    data: &neighbourhood
+      name: "Central"
+      url: "http://example.com/central"
+      description: "The central neighbourhood."
+  - collection_name: TimelineNode
+    data: &timeline
+      header: "Project Start"
+      date: "2025-04-13T12:00:00Z"
+      highlightedInfoIcon: "🚀"
+      highlightedInfoLabel: "Launch"
+      description: "Initial phase for the property project."
+      TimelineNodeState: "active"
+
+# --- Phase Two: Parent Document (Properties) ---
+Parent:
+  - collection_name: Properties
+    data:
+      name: "Luxury Apartment in Athens"
+      city: "Athens"
+      addressCommunity: "Kolonaki"
+      unitNumber: 101
+      numberOfBedrooms: 3
+      numberOfInvestors: 5
+      totalViews: 2500
+      isBookmarked: false
+      fundedDate: "2023-06-15T10:30:00Z"
+      exitDate: "2028-06-15T10:30:00Z"
+      price: 750000.0
+      netYieldPercentage: 5.5
+      totalReturnPercetage: 20.0
+      totalInvested: 500000.0
+      totalInvestedPercentage: 66.67
+      category: "apartment"
+      investmentStrategy:
+        value: *strategy
+        relation: "oneToOne"
+      area: 1500.0
+      rentalType: "long-term-rental"
+      grossYieldPercentage: 6.0
+      numberOfCurrentInvestors: 4
+      description: "A luxurious apartment in the heart of Athens, with modern fittings and a beautiful view."
+      documents: []           # Assuming no documents for now
+      fundingTimelineEvent: []     # Assuming not provided yet
+      annualRent: 40000.0
+      transactionCost: 5000.0
+      investmentCost: 60000.0
+      annualServiceCharges: 2000.0
+      annualManagementMaintenance: 1500.0
+      netIncome: 35000.0
+      state: "read"
+      InvestmentStatus: "available"
+      spaces:
+        value: *space
+        relation: "manyToMany"
+      country:
+        value: *country
+        relation: "manyToOne"
+      location:
+        - "41.0082,28.9784"
+      neighbourhood:
+        value: *neighbourhood
+        relation: "manyToOne"
+      monthlyCashflow: 3000.0
+      appreciation: 3.0
+      grossSellPrice: 800000.0
+      grossTotalRentalIncome: 480000.0
+      latestValuation: 770000.0
+      TimelineNode:
+        value: *timeline
+        relation: "oneToMany"

@@ -1,0 +1,89 @@
+# --- Phase One: Child Documents ---
+Children:
+  - collection_name: InvestmentStrategy
+    data: &strategy
+      InvestmentStrategyType: "balanced"
+      name: "Hospitality Growth"
+      description: "Tourism-driven investment with strong growth potential in premium hospitality sector."
+  - collection_name: Space
+    data: &space
+      spaceType: "bedroom"
+      count: 24
+  - collection_name: Country
+    data: &country
+      name: "Greece"
+      shortName: "GR"
+      icon: "🇬🇷"
+  - collection_name: Neighbourhood
+    data: &neighbourhood
+      name: "Plaka"
+      url: "http://example.com/plaka"
+      description: "Historic neighborhood at the foot of the Acropolis with vibrant tourism."
+  - collection_name: TimelineNode
+    data: &timeline
+      header: "Renovation Complete"
+      date: "2025-05-01T14:00:00Z"
+      highlightedInfoIcon: "🏨"
+      highlightedInfoLabel: "Open"
+      description: "Hotel renovation completed and ready for summer season."
+      TimelineNodeState: "incomplete"
+
+# --- Phase Two: Parent Document (Properties) ---
+Parent:
+  - collection_name: Properties
+    data:
+      name: "Acropolis View Boutique Hotel"
+      city: "Athens"
+      addressCommunity: "Plaka"
+      unitNumber: null
+      numberOfBedrooms: 24
+      numberOfInvestors: 18
+      totalViews: 4320
+      isBookmarked: true
+      fundedDate: "2024-09-15T11:00:00Z"
+      exitDate: "2034-09-15T11:00:00Z"
+      price: 3200000.0
+      netYieldPercentage: 7.8
+      totalReturnPercetage: 32.5
+      totalInvested: 2800000.0
+      totalInvestedPercentage: 87.5
+      category: "hotel"
+      investmentStrategy:
+        value: *strategy
+        relation: "oneToOne"
+      area: 1200.0
+      rentalType: "hospitality"
+      grossYieldPercentage: 9.5
+      numberOfCurrentInvestors: 18
+      description: "Historic neoclassical building converted into a luxury boutique hotel with 24 rooms, roof garden with Acropolis views, restaurant, and spa facilities. Prime location for tourism."
+      documents: []
+      fundingTimelineEvent: []
+      annualRent: 0.0
+      transactionCost: 45000.0
+      investmentCost: 750000.0
+      annualServiceCharges: 35000.0
+      annualManagementMaintenance: 120000.0
+      netIncome: 250000.0
+      state: "sold"
+      InvestmentStatus: "exited"
+      spaces:
+        value: *space
+        relation: "manyToMany"
+      country:
+        value: *country
+        relation: "manyToOne"
+      location:
+        - "37.9715,23.7269"
+      neighbourhood:
+        value: *neighbourhood
+        relation: "manyToOne"
+      monthlyCashflow: 20833.33
+      appreciation: 4.2
+      grossSellPrice: 0.0
+      grossTotalRentalIncome: 405000.0
+      latestValuation: 3350000.0
+      TimelineNode:
+        value: *timeline
+        relation: "oneToMany"
+      images:
+       - 680e3cae0031af0ea194
