@@ -5,6 +5,10 @@ import urllib3
 import requests
 from dotenv import load_dotenv
 import time
+import mimetypes
+from pathlib import Path
+import json
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -98,11 +102,9 @@ def check_database_with_session(session, project_id, database_id, endpoint):
         except Exception as e:
             print(f"❌ Database access failed: {str(e)}")
             return False
-        
+
 def get_document_with_session(session, project_id, database_id, collection_id, document_id, endpoint):
-    """
-    Retrieve a document from a specific collection using its documentId.
-    """
+    """Retrieve a document from a specific collection using its documentId."""
     url = f"{endpoint}/databases/{database_id}/collections/{collection_id}/documents/{document_id}"
     headers = {"X-Appwrite-Project": project_id}
     response = session.get(url, headers=headers)
@@ -114,7 +116,7 @@ def get_document_with_session(session, project_id, database_id, collection_id, d
     else:
         print(f"❌ Failed to get document (ID: {document_id}): {response.text}")
         return None
-    
+
 def get_collection_documents_with_session(session, project_id, database_id, collection_id, endpoint):
     """Get documents from a collection using an existing session"""
     
@@ -135,9 +137,7 @@ def get_collection_documents_with_session(session, project_id, database_id, coll
     return documents
 
 def get_collection_id_by_name(session, project_id, database_id, target_name, endpoint):
-    """
-    Retrieve a collection's ID by its name using the Appwrite REST API.
-    """
+    """Retrieve a collection's ID by its name using the Appwrite REST API."""
     url = f"{endpoint}/databases/{database_id}/collections"
     headers = {
         "X-Appwrite-Project": project_id
@@ -333,6 +333,7 @@ def create_documents_with_relationships(session, yaml_file, project_id, database
     print("--- Processing Children ---")
     for child in yaml_data["Children"]:
         coll_name = child.get("collection_name")
+        print(f"Processing child collection: {coll_name}")
         data = child.get("data")
         if not coll_name or not data:
             print("Child entry is missing 'collection_name' or 'data'. Skipping.")
@@ -348,6 +349,7 @@ def create_documents_with_relationships(session, yaml_file, project_id, database
     
     print("--- Processing Parent ---")
     for parent in yaml_data["Parent"]:
+        print(f"Processing parent collection: {parent.get('collection_name')}")
         coll_name = parent.get("collection_name")
         data = parent.get("data")
         if not coll_name or not data:
@@ -379,68 +381,447 @@ def create_documents_with_relationships(session, yaml_file, project_id, database
                 get_document_with_session(session, project_id, database_id, parent_coll_id, parent_result['$id'], endpoint)
     print("--- Relationship documents creation complete ---")
 
-# --- New functions for team management ---
+# --- Storage/Media Upload Functions ---
 
-# def create_team(session, project_id, name, roles, endpoint):
-#     """
-#     Create a new team with the specified name and roles.
+def check_bucket_with_session(session, project_id, bucket_id, endpoint):
+    """Check if a storage bucket exists and is accessible"""
+    print(f"Checking bucket (ID: {bucket_id})...")
     
-#     :param session: The authenticated requests session.
-#     :param project_id: The Appwrite project ID.
-#     :param name: The name of the team.
-#     :param roles: A list of roles (strings) for the team. These roles will be used in permission strings.
-#     :param endpoint: The Appwrite endpoint URL.
-#     :return: The team object if created successfully, or None.
-#     """
-#     url = f"{endpoint}/teams"
-#     headers = {
-#         "X-Appwrite-Project": project_id,
-#         "Content-Type": "application/json"
-#     }
-#     data = {
-#         "name": name,
-#         "roles": roles
-#     }
-#     response = session.post(url, headers=headers, json=data)
-#     if response.status_code == 201:
-#         team = response.json()
-#         print(f"✅ Team '{name}' created successfully with ID: {team['$id']}")
-#         return team
-#     else:
-#         print(f"❌ Failed to create team '{name}': {response.text}")
-#         return None
+    bucket_url = f"{endpoint}/storage/buckets/{bucket_id}"
+    headers = {
+        "X-Appwrite-Project": project_id
+    }
+    
+    response = session.get(bucket_url, headers=headers)
+    
+    if response.status_code == 200:
+        bucket = response.json()
+        print(f"✅ Bucket found: '{bucket['name']}' (ID: {bucket['$id']})")
+        return True
+    else:
+        print(f"❌ Bucket access failed: {response.text}")
+        return False
 
-# def add_user_to_team(session, project_id, team_id, email, roles, callback_url, endpoint):
-#     """
-#     Add a user to an existing team with the given roles.
+def get_supported_image_extensions():
+    """Get list of supported image file extensions"""
+    return ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.tiff', '.ico']
+
+def get_supported_video_extensions():
+    """Get list of supported video file extensions"""
+    return ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.mkv', '.m4v', '.3gp', '.ogv']
+
+def get_supported_media_extensions():
+    """Get list of all supported media file extensions (images + videos)"""
+    return get_supported_image_extensions() + get_supported_video_extensions()
+
+def get_bucket_file_names(session, project_id, bucket_id, endpoint):
+    """Get a set of all file names in the bucket for duplicate checking with full pagination support"""
     
-#     :param session: The authenticated requests session.
-#     :param project_id: The Appwrite project ID.
-#     :param team_id: The ID of the team.
-#     :param email: The email of the user to add.
-#     :param roles: A list of roles (strings) to assign to the user within the team.
-#     :param callback_url: A URL the user will be redirected to after accepting the team invitation.
-#     :param endpoint: The Appwrite endpoint URL.
-#     :return: The member object if added successfully, or None.
-#     """
-#     url = f"{endpoint}/teams/{team_id}/members"
-#     headers = {
-#         "X-Appwrite-Project": project_id,
-#         "Content-Type": "application/json"
-#     }
-#     data = {
-#         "email": email,
-#         "roles": roles,
-#         "url": callback_url
-#     }
-#     response = session.post(url, headers=headers, json=data)
-#     if response.status_code == 201:
-#         member = response.json()
-#         print(f"✅ Member '{email}' added to team with ID: {member['$id']}")
-#         return member
-#     else:
-#         print(f"❌ Failed to add user to team: {response.text}")
-#         return None
+    url = f"{endpoint}/storage/buckets/{bucket_id}/files"
+    headers = {
+        "X-Appwrite-Project": project_id
+    }
+    
+    all_files = []
+    limit = 100  # Maximum allowed by Appwrite
+    
+    print("Scanning bucket for existing files...")
+    page = 1
+    
+    while True:
+        # Build parameters for current page - use simple limit/offset
+        params = {
+            'limit': limit,
+            'offset': (page - 1) * limit
+        }
+        
+        response = session.get(url, headers=headers, params=params)
+        
+        if response.status_code != 200:
+            print(f"❌ Failed to list files on page {page}: {response.text}")
+            # Return what we have so far rather than failing completely
+            break
+        
+        files_data = response.json()
+        # Try both 'documents' and 'files' keys for compatibility
+        files = files_data.get('files', files_data.get('documents', []))
+        total = files_data.get('total', len(all_files))
+        
+        if not files:
+            break
+        
+        all_files.extend(files)
+        print(f"📄 Scanned page {page}: {len(files)} files (Total so far: {len(all_files)}/{total})")
+        
+        # If we got less than the limit, we've reached the end
+        if len(files) < limit:
+            break
+            
+        page += 1
+    
+    # Return set of file names for fast lookup
+    file_names = {file['name'] for file in all_files}
+    print(f"✅ Complete scan finished: Found {len(file_names)} existing files across {page} pages")
+    return file_names
+
+def get_all_bucket_files_detailed(session, project_id, bucket_id, endpoint):
+    """Get detailed information about all files in the bucket with full pagination support"""
+    
+    url = f"{endpoint}/storage/buckets/{bucket_id}/files"
+    headers = {
+        "X-Appwrite-Project": project_id
+    }
+    
+    all_files = []
+    limit = 100  # Maximum allowed by Appwrite
+    
+    print("Retrieving detailed file information...")
+    page = 1
+    
+    while True:
+        # Build parameters for current page - use simple limit/offset
+        params = {
+            'limit': limit,
+            'offset': (page - 1) * limit
+        }
+        
+        response = session.get(url, headers=headers, params=params)
+        
+        if response.status_code != 200:
+            print(f"❌ Failed to retrieve files on page {page}: {response.text}")
+            break
+        
+        files_data = response.json()
+        # Try both 'documents' and 'files' keys for compatibility
+        files = files_data.get('files', files_data.get('documents', []))
+        total = files_data.get('total', len(all_files))
+        
+        if not files:
+            break
+        
+        all_files.extend(files)
+        print(f"📄 Retrieved page {page}: {len(files)} files (Total: {len(all_files)}/{total})")
+        
+        # If we got less than the limit, we've reached the end
+        if len(files) < limit:
+            break
+            
+        page += 1
+    
+    print(f"✅ Retrieved {len(all_files)} files total across {page} pages")
+    return all_files
+
+def find_file_by_name_paginated(session, project_id, bucket_id, file_name, endpoint):
+    """Find a specific file by name using paginated search across all pages"""
+    
+    url = f"{endpoint}/storage/buckets/{bucket_id}/files"
+    headers = {
+        "X-Appwrite-Project": project_id
+    }
+    
+    # First try using Appwrite's search functionality if available
+    params = {
+        'search': file_name,
+        'limit': 100
+    }
+    
+    response = session.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        files_data = response.json()
+        # Try both 'documents' and 'files' keys for compatibility
+        files = files_data.get('files', files_data.get('documents', []))
+        
+        # Look for exact match in search results
+        for file in files:
+            if file['name'] == file_name:
+                return file
+    
+    # If search didn't work or didn't find exact match, fall back to full pagination
+    print(f"🔍 Searching for '{file_name}' across all pages...")
+    
+    all_files = []
+    limit = 100
+    page = 1
+    
+    while True:
+        # Build parameters for current page - use simple limit/offset
+        params = {
+            'limit': limit,
+            'offset': (page - 1) * limit
+        }
+        
+        response = session.get(url, headers=headers, params=params)
+        
+        if response.status_code != 200:
+            print(f"❌ Failed to search on page {page}: {response.text}")
+            break
+        
+        files_data = response.json()
+        # Try both 'documents' and 'files' keys for compatibility
+        files = files_data.get('files', files_data.get('documents', []))
+        
+        if not files:
+            break
+        
+        # Check each file on this page
+        for file in files:
+            if file['name'] == file_name:
+                print(f"✅ Found '{file_name}' on page {page}")
+                return file
+        
+        all_files.extend(files)
+        
+        # If we got less than the limit, we've reached the end
+        if len(files) < limit:
+            break
+            
+        page += 1
+    
+    print(f"❌ File '{file_name}' not found after searching {page} pages")
+    return None
+
+def delete_file_by_name_paginated(session, project_id, bucket_id, file_name, endpoint):
+    """Delete a file from bucket by its name using paginated search"""
+    
+    # Find the file first
+    target_file = find_file_by_name_paginated(session, project_id, bucket_id, file_name, endpoint)
+    
+    if not target_file:
+        print(f"❌ File not found for deletion: {file_name}")
+        return False
+    
+    # Delete the file using its ID
+    delete_url = f"{endpoint}/storage/buckets/{bucket_id}/files/{target_file['$id']}"
+    headers = {
+        "X-Appwrite-Project": project_id
+    }
+    
+    delete_response = session.delete(delete_url, headers=headers)
+    
+    if delete_response.status_code == 204:
+        print(f"🗑️  Deleted existing file: {file_name} (ID: {target_file['$id']})")
+        return True
+    else:
+        print(f"❌ Failed to delete file {file_name}: {delete_response.text}")
+        return False
+
+def upload_file_to_bucket_with_duplicate_check(session, project_id, bucket_id, file_path, endpoint, file_id=None, permissions=None, skip_duplicates=True, overwrite=False, existing_files=None):
+    """Upload a single file to Appwrite Storage bucket with duplicate checking"""
+    
+    file_path = Path(file_path)
+    
+    if not file_path.exists():
+        print(f"❌ File not found: {file_path}")
+        return None
+    
+    # Check for duplicates if existing_files set is provided
+    if existing_files is not None and file_path.name in existing_files:
+        if skip_duplicates and not overwrite:
+            print(f"⏭️  Skipping duplicate: {file_path.name} (already exists in bucket)")
+            return {'skipped': True, 'file_name': file_path.name, 'reason': 'duplicate'}
+        elif overwrite:
+            print(f"🔄 Overwriting existing file: {file_path.name}")
+            # For overwrite, we'll delete the existing file first
+            if not delete_file_by_name_paginated(session, project_id, bucket_id, file_path.name, endpoint):
+                print(f"❌ Failed to delete existing file for overwrite: {file_path.name}")
+                return None
+            # Remove from existing_files set since we're deleting it
+            existing_files.discard(file_path.name)
+    
+    # Generate file ID if not provided
+    if not file_id:
+        file_id = "unique()"
+    
+    # Detect MIME type
+    mime_type, _ = mimetypes.guess_type(str(file_path))
+    if not mime_type:
+        mime_type = 'application/octet-stream'
+    
+    url = f"{endpoint}/storage/buckets/{bucket_id}/files"
+    headers = {
+        "X-Appwrite-Project": project_id
+    }
+    
+    # Prepare the multipart form data
+    files = {
+        'file': (file_path.name, open(file_path, 'rb'), mime_type)
+    }
+    
+    data = {
+        'fileId': file_id
+    }
+    
+    # Add permissions if provided
+    if permissions:
+        data['permissions'] = json.dumps(permissions)
+    
+    try:
+        response = session.post(url, headers=headers, files=files, data=data)
+        
+        if response.status_code == 201:
+            result = response.json()
+            print(f"✅ Uploaded: {file_path.name} -> ID: {result['$id']}")
+            # Add to existing_files set to track new uploads
+            if existing_files is not None:
+                existing_files.add(file_path.name)
+            return result
+        else:
+            print(f"❌ Failed to upload {file_path.name}: {response.text}")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error uploading {file_path.name}: {str(e)}")
+        return None
+    finally:
+        # Close the file
+        if 'file' in files:
+            files['file'][1].close()
+
+def delete_file_by_name(session, project_id, bucket_id, file_name, endpoint):
+    """Delete a file from bucket by its name (legacy function - use delete_file_by_name_paginated for better results)"""
+    return delete_file_by_name_paginated(session, project_id, bucket_id, file_name, endpoint)
+
+def bulk_upload_media_from_folder(session, project_id, bucket_id, folder_path, endpoint, permissions=None, extensions=None, media_type="images", skip_duplicates=True, overwrite=False):
+    """Upload all media files (images/videos) from a folder to Appwrite Storage bucket with duplicate checking"""
+    
+    folder_path = Path(folder_path)
+    
+    if not folder_path.exists() or not folder_path.is_dir():
+        print(f"❌ Folder not found or not a directory: {folder_path}")
+        return []
+    
+    # Use appropriate default extensions based on media type
+    if not extensions:
+        if media_type == "videos":
+            extensions = get_supported_video_extensions()
+        elif media_type == "all" or media_type == "media":
+            extensions = get_supported_media_extensions()
+        else:  # default to images
+            extensions = get_supported_image_extensions()
+    
+    # Convert extensions to lowercase for comparison
+    extensions = [ext.lower() for ext in extensions]
+    
+    # Find all media files in the folder
+    media_files = []
+    for ext in extensions:
+        media_files.extend(folder_path.glob(f"*{ext}"))
+        media_files.extend(folder_path.glob(f"*{ext.upper()}"))
+    
+    if not media_files:
+        print(f"❌ No {media_type} files found in {folder_path}")
+        return []
+    
+    print(f"Found {len(media_files)} {media_type} files to upload...")
+    
+    # Get existing files for duplicate checking if enabled
+    existing_files = None
+    if skip_duplicates or overwrite:
+        print("Checking for existing files in bucket...")
+        existing_files = get_bucket_file_names(session, project_id, bucket_id, endpoint)
+    
+    successful_uploads = []
+    failed_uploads = []
+    skipped_duplicates = []
+    
+    for i, media_file in enumerate(media_files, 1):
+        file_size = media_file.stat().st_size
+        file_size_mb = file_size / (1024 * 1024)
+        
+        print(f"Processing {i}/{len(media_files)}: {media_file.name} ({file_size_mb:.2f} MB)")
+        
+        result = upload_file_to_bucket_with_duplicate_check(
+            session, 
+            project_id, 
+            bucket_id, 
+            media_file, 
+            endpoint, 
+            permissions=permissions,
+            skip_duplicates=skip_duplicates,
+            overwrite=overwrite,
+            existing_files=existing_files
+        )
+        
+        if result:
+            if result.get('skipped'):
+                skipped_duplicates.append({
+                    'file_name': media_file.name,
+                    'reason': result.get('reason', 'duplicate')
+                })
+            else:
+                successful_uploads.append({
+                    'file_name': media_file.name,
+                    'file_id': result['$id'],
+                    'file_path': str(media_file),
+                    'size': result.get('sizeOriginal', 0),
+                    'mime_type': result.get('mimeType', ''),
+                    'file_type': 'video' if media_file.suffix.lower() in get_supported_video_extensions() else 'image'
+                })
+        else:
+            failed_uploads.append(str(media_file))
+        
+        # Longer delay for video files to avoid rate limiting
+        delay = 0.5 if media_file.suffix.lower() in get_supported_video_extensions() else 0.1
+        time.sleep(delay)
+    
+    # Print comprehensive summary
+    print("\n--- Upload Summary ---")
+    print(f"Total files found: {len(media_files)}")
+    print(f"Successfully uploaded: {len(successful_uploads)}")
+    print(f"Skipped duplicates: {len(skipped_duplicates)}")
+    print(f"Failed uploads: {len(failed_uploads)}")
+    
+    # Categorize by type
+    images = [f for f in successful_uploads if f['file_type'] == 'image']
+    videos = [f for f in successful_uploads if f['file_type'] == 'video']
+    
+    if images:
+        print(f"\n✅ Successfully uploaded {len(images)} images:")
+        for upload in images:
+            size_mb = upload['size'] / (1024 * 1024)
+            print(f"  - {upload['file_name']} (ID: {upload['file_id']}, Size: {size_mb:.2f} MB)")
+    
+    if videos:
+        print(f"\n✅ Successfully uploaded {len(videos)} videos:")
+        for upload in videos:
+            size_mb = upload['size'] / (1024 * 1024)
+            print(f"  - {upload['file_name']} (ID: {upload['file_id']}, Size: {size_mb:.2f} MB)")
+    
+    if skipped_duplicates:
+        print(f"\n⏭️  Skipped {len(skipped_duplicates)} duplicate files:")
+        for skipped in skipped_duplicates:
+            print(f"  - {skipped['file_name']} ({skipped['reason']})")
+    
+    if failed_uploads:
+        print("\n❌ Failed uploads:")
+        for failed_file in failed_uploads:
+            print(f"  - {failed_file}")
+    
+    return successful_uploads
+
+def list_bucket_files(session, project_id, bucket_id, endpoint):
+    """List all files in a storage bucket with full pagination support"""
+    
+    files = get_all_bucket_files_detailed(session, project_id, bucket_id, endpoint)
+    
+    if files:
+        print(f"✅ Found {len(files)} total files in bucket {bucket_id}")
+        
+        print("\n--- Files in Bucket ---")
+        for i, file in enumerate(files, 1):
+            size_mb = file.get('sizeOriginal', 0) / (1024 * 1024)
+            print(f"{i}. ID: {file['$id']}")
+            print(f"   Name: {file['name']}")
+            print(f"   Size: {size_mb:.2f} MB")
+            print(f"   MIME Type: {file.get('mimeType', 'unknown')}")
+            print(f"   Created: {file['$createdAt']}")
+            print("-" * 40)
+        
+        return files
+    else:
+        print(f"❌ No files found or failed to retrieve files from bucket {bucket_id}")
+        return []
 
 def generate_team_permissions(team_id):
     """
@@ -460,7 +841,7 @@ def generate_team_permissions(team_id):
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Bulk create documents in Appwrite from YAML data")
+    parser = argparse.ArgumentParser(description="Bulk create documents in Appwrite from YAML data and upload images")
     parser.add_argument("--yaml-file", help="Path to YAML file containing document data")
     parser.add_argument("--email", help="Appwrite login email")
     parser.add_argument("--password", help="Appwrite login password")
@@ -468,6 +849,25 @@ if __name__ == "__main__":
     parser.add_argument("--database-id", help="Appwrite database ID")
     parser.add_argument("--collection-id", help="Appwrite collection ID")
     parser.add_argument("--no-verify-ssl", action="store_true", help="Disable SSL certificate verification")
+    
+    # Storage/Image upload arguments
+    parser.add_argument("--bucket-id", help="Appwrite storage bucket ID")
+    parser.add_argument("--media-folder", help="Path to folder containing media files to upload")
+    parser.add_argument("--images-folder", help="Path to folder containing images to upload (legacy)")
+    parser.add_argument("--upload-media", action="store_true", help="Upload media files from specified folder to bucket")
+    parser.add_argument("--upload-images", action="store_true", help="Upload images from specified folder to bucket (legacy)")
+    parser.add_argument("--upload-videos", action="store_true", help="Upload videos from specified folder to bucket")
+    parser.add_argument("--media-type", choices=["images", "videos", "all"], default="images", 
+                        help="Type of media to upload (images, videos, or all)")
+    parser.add_argument("--check-bucket", action="store_true", help="Check if storage bucket exists")
+    parser.add_argument("--list-files", action="store_true", help="List files in storage bucket")
+    parser.add_argument("--media-extensions", nargs="+", help="Supported media extensions (default: auto-detect by type)")
+    parser.add_argument("--image-extensions", nargs="+", help="Supported image extensions (legacy)")
+    parser.add_argument("--video-extensions", nargs="+", help="Supported video extensions")
+    parser.add_argument("--file-permissions", help="JSON string of file permissions for uploaded files")
+    parser.add_argument("--skip-duplicates", action="store_true", default=True, help="Skip files that already exist in bucket (default: True)")
+    parser.add_argument("--no-skip-duplicates", action="store_true", help="Upload all files even if duplicates exist")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing files with same name")
     
     # Test arguments
     parser.add_argument("--test-connection", action="store_true", help="Test connection to Appwrite")
@@ -508,7 +908,6 @@ if __name__ == "__main__":
         else:
             sys.exit(1)
 
-            
     if args.check_database:
         if not args.database_id:
             print("Error: Database ID not provided. Use --database-id.")
@@ -517,6 +916,129 @@ if __name__ == "__main__":
             sys.exit(0)
         else:
             sys.exit(1)
+
+    # Handle storage bucket check
+    if args.check_bucket:
+        if not args.bucket_id:
+            print("Error: Bucket ID not provided. Use --bucket-id.")
+            sys.exit(1)
+        if check_bucket_with_session(session, project_id, args.bucket_id, endpoint):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    # Handle file listing in bucket
+    if args.list_files:
+        if not args.bucket_id:
+            print("Error: Bucket ID not provided. Use --bucket-id.")
+            sys.exit(1)
+        
+        files = list_bucket_files(session, project_id, args.bucket_id, endpoint)
+        sys.exit(0 if files is not None else 1)
+
+    # Handle media upload (new unified approach)
+    if args.upload_media or args.upload_videos:
+        folder_path = args.media_folder
+        if not folder_path:
+            print("Error: Need --media-folder for media upload")
+            sys.exit(1)
+        
+        if not args.bucket_id:
+            print("Error: Need --bucket-id for media upload")
+            sys.exit(1)
+        
+        # Determine media type
+        if args.upload_videos:
+            media_type = "videos"
+        else:
+            media_type = args.media_type
+        
+        # Parse permissions if provided
+        permissions = None
+        if args.file_permissions:
+            try:
+                permissions = json.loads(args.file_permissions)
+            except json.JSONDecodeError:
+                print("Error: Invalid JSON format for --file-permissions")
+                sys.exit(1)
+        
+        # Determine duplicate handling
+        skip_duplicates = not args.no_skip_duplicates  # Default is True unless explicitly disabled
+        overwrite = args.overwrite
+        
+        # Validate conflicting options
+        if skip_duplicates and overwrite:
+            print("Error: Cannot use both --skip-duplicates and --overwrite. Choose one approach.")
+            sys.exit(1)
+        
+        # Use custom extensions if provided
+        extensions = None
+        if args.media_extensions:
+            extensions = args.media_extensions
+        elif args.video_extensions and media_type == "videos":
+            extensions = args.video_extensions
+        
+        successful_uploads = bulk_upload_media_from_folder(
+            session,
+            project_id,
+            args.bucket_id,
+            folder_path,
+            endpoint,
+            permissions=permissions,
+            extensions=extensions,
+            media_type=media_type,
+            skip_duplicates=skip_duplicates,
+            overwrite=overwrite
+        )
+        
+        sys.exit(0 if successful_uploads else 1)
+
+    # Handle legacy image upload
+    if args.upload_images:
+        folder_path = args.images_folder or args.media_folder
+        if not folder_path:
+            print("Error: Need --images-folder or --media-folder for image upload")
+            sys.exit(1)
+        
+        if not args.bucket_id:
+            print("Error: Need --bucket-id for image upload")
+            sys.exit(1)
+        
+        # Parse permissions if provided
+        permissions = None
+        if args.file_permissions:
+            try:
+                permissions = json.loads(args.file_permissions)
+            except json.JSONDecodeError:
+                print("Error: Invalid JSON format for --file-permissions")
+                sys.exit(1)
+        
+        # Determine duplicate handling
+        skip_duplicates = not args.no_skip_duplicates  # Default is True unless explicitly disabled
+        overwrite = args.overwrite
+        
+        # Validate conflicting options
+        if skip_duplicates and overwrite:
+            print("Error: Cannot use both --skip-duplicates and --overwrite. Choose one approach.")
+            sys.exit(1)
+        
+        # Use custom extensions if provided
+        extensions = args.image_extensions if args.image_extensions else None
+        
+        successful_uploads = bulk_upload_media_from_folder(
+            session,
+            project_id,
+            args.bucket_id,
+            folder_path,
+            endpoint,
+            permissions=permissions,
+            extensions=extensions,
+            media_type="images",
+            skip_duplicates=skip_duplicates,
+            overwrite=overwrite
+        )
+        
+        sys.exit(0 if successful_uploads else 1)
 
     # Add check_collection functionality if needed
     if args.check_collection:
@@ -601,7 +1123,9 @@ if __name__ == "__main__":
             "nezuko": "67fbb8b30015f0e807c6",
             "Properties": "67f2ac3000218cb04d4e",
             "InvestmentStrategy": "67e94032001f3cdd2781",
-            "Neighbourhood": "67e941e5003bd086de54"
+            "Neighbourhood": "67e941e5003bd086de54",
+            "InvestmentStrategy": "67e94032001f3cdd2781",
+            "InvestmentStrategyHighlights": "67e940800002fb4d894a",
         }
         create_documents_with_relationships(session, args.yaml_file, project_id, args.database_id, collection_mapping, endpoint)
         sys.exit(0)    
