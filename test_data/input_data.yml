@@ -1,0 +1,13 @@
+properties:
+- name: whatever
+  investmentStrategy: reffer_id 
+ .... 
+
+
+
+investmentStrategy:
+- id: &reffer_id 
+  name: whatever_strategy
+  value: whatever
+
+

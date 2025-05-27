@@ -1,0 +1,34 @@
+# --- Phase One: Child Documents ---
+
+Children:
+  - collection_name: Country
+    data: &country
+      name: "random country name"
+      shortName: "GR"
+      icon: "🇬🇷"
+  - collection_name: Space
+    data: &space
+      spaceType: "Living-Room"
+      count: 1
+  - collection_name: TimelineNode
+    data: &timelineNode
+      header: "Launch some event yo"
+      date: "2025-04-13T12:00:00Z"
+      highlightedInfoIcon: "🚀"
+      highlightedInfoLabel: "Launch"
+      description: "Initial timeline node."
+      TimelineNodeState: "active"
+
+# --- Phase Two: Parent Document ---
+Parent:
+  - collection_name: nezuko
+    data:
+      country:
+        value: *country    
+        relation: "manyToOne"   #
+      space: 
+        value: *space    
+        relation: "manyToMany"  # Expect an array reference, even if just one is provided
+      timelineNode: 
+        value: *timelineNode    
+        relation: "oneToMany" 

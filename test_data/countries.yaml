@@ -1,0 +1,11 @@
+- name: "Greece"
+  shortName: "GR"
+  icon: "🇬🇷"
+
+- name: "United States"
+  shortName: "US"
+  icon: "🇺🇸"
+
+- name: "Japan"
+  shortName: "JP"
+  icon: "🇯🇵"
