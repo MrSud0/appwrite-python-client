@@ -12,6 +12,7 @@ A Python-based command-line tool for interacting with Appwrite databases and col
 - Create documents with relationships
 - Team management functionality
 - Support for SSL verification toggle
+- Upload files to Appwrite storage buckets
 
 ## Prerequisites
 
@@ -126,9 +127,19 @@ The script includes functions for team management but isn't exposed via command-
 team = create_team(session, project_id, "Team Name", ["admin", "editor"], endpoint)
 
 # Add a user to a team
-member = add_user_to_team(session, project_id, team_id, "user@example.com", 
+member = add_user_to_team(session, project_id, team_id, "user@example.com",
                           ["admin"], "https://yourapp.com/callback", endpoint)
 ```
+
+### Uploading Files to Storage
+
+Upload all files from a folder to a storage bucket:
+
+```bash
+python appwrite_client.py --upload-files --media-folder=/path/to/folder --bucket-id=your-bucket-id
+```
+
+By default duplicate file names are skipped. Use `--no-skip-duplicates` to upload duplicates or `--overwrite` to replace existing files.
 
 ## Command Line Arguments
 
@@ -147,6 +158,9 @@ member = add_user_to_team(session, project_id, team_id, "user@example.com",
 | `--list-documents` | List documents from a collection |
 | `--create-document` | Create a single document from the first YAML entry |
 | `--relations` | Process YAML file with Children/Parent relationships |
+| `--bucket-id` | Appwrite storage bucket ID |
+| `--media-folder` | Path to folder containing files to upload |
+| `--upload-files` | Upload all files from the specified folder to the bucket |
 
 ## Example YAML for Document Creation
 

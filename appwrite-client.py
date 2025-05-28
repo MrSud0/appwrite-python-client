@@ -797,7 +797,89 @@ def bulk_upload_media_from_folder(session, project_id, bucket_id, folder_path, e
         print("\n❌ Failed uploads:")
         for failed_file in failed_uploads:
             print(f"  - {failed_file}")
-    
+
+    return successful_uploads
+
+def bulk_upload_files_from_folder(session, project_id, bucket_id, folder_path, endpoint, permissions=None,
+                                  skip_duplicates=True, overwrite=False):
+    """Upload all files from a folder to Appwrite Storage bucket."""
+
+    folder_path = Path(folder_path)
+
+    if not folder_path.exists() or not folder_path.is_dir():
+        print(f"❌ Folder not found or not a directory: {folder_path}")
+        return []
+
+    all_files = [f for f in folder_path.iterdir() if f.is_file()]
+
+    if not all_files:
+        print(f"❌ No files found in {folder_path}")
+        return []
+
+    print(f"Found {len(all_files)} files to upload...")
+
+    existing_files = None
+    if skip_duplicates or overwrite:
+        print("Checking for existing files in bucket...")
+        existing_files = get_bucket_file_names(session, project_id, bucket_id, endpoint)
+
+    successful_uploads = []
+    failed_uploads = []
+    skipped_duplicates = []
+
+    for i, file_path in enumerate(all_files, 1):
+        file_size = file_path.stat().st_size
+        file_size_mb = file_size / (1024 * 1024)
+
+        print(f"Processing {i}/{len(all_files)}: {file_path.name} ({file_size_mb:.2f} MB)")
+
+        result = upload_file_to_bucket_with_duplicate_check(
+            session,
+            project_id,
+            bucket_id,
+            file_path,
+            endpoint,
+            permissions=permissions,
+            skip_duplicates=skip_duplicates,
+            overwrite=overwrite,
+            existing_files=existing_files
+        )
+
+        if result:
+            if result.get('skipped'):
+                skipped_duplicates.append({
+                    'file_name': file_path.name,
+                    'reason': result.get('reason', 'duplicate')
+                })
+            else:
+                successful_uploads.append({
+                    'file_name': file_path.name,
+                    'file_id': result['$id'],
+                    'file_path': str(file_path),
+                    'size': result.get('sizeOriginal', 0),
+                    'mime_type': result.get('mimeType', '')
+                })
+        else:
+            failed_uploads.append(str(file_path))
+
+        time.sleep(0.1)
+
+    print("\n--- Upload Summary ---")
+    print(f"Total files found: {len(all_files)}")
+    print(f"Successfully uploaded: {len(successful_uploads)}")
+    print(f"Skipped duplicates: {len(skipped_duplicates)}")
+    print(f"Failed uploads: {len(failed_uploads)}")
+
+    if skipped_duplicates:
+        print(f"\n⏭️  Skipped {len(skipped_duplicates)} duplicate files:")
+        for skipped in skipped_duplicates:
+            print(f"  - {skipped['file_name']} ({skipped['reason']})")
+
+    if failed_uploads:
+        print("\n❌ Failed uploads:")
+        for failed_file in failed_uploads:
+            print(f"  - {failed_file}")
+
     return successful_uploads
 
 def list_bucket_files(session, project_id, bucket_id, endpoint):
@@ -855,6 +937,7 @@ if __name__ == "__main__":
     parser.add_argument("--media-folder", help="Path to folder containing media files to upload")
     parser.add_argument("--images-folder", help="Path to folder containing images to upload (legacy)")
     parser.add_argument("--upload-media", action="store_true", help="Upload media files from specified folder to bucket")
+    parser.add_argument("--upload-files", action="store_true", help="Upload all files from specified folder to bucket")
     parser.add_argument("--upload-images", action="store_true", help="Upload images from specified folder to bucket (legacy)")
     parser.add_argument("--upload-videos", action="store_true", help="Upload videos from specified folder to bucket")
     parser.add_argument("--media-type", choices=["images", "videos", "all"], default="images", 
@@ -932,9 +1015,48 @@ if __name__ == "__main__":
         if not args.bucket_id:
             print("Error: Bucket ID not provided. Use --bucket-id.")
             sys.exit(1)
-        
+
         files = list_bucket_files(session, project_id, args.bucket_id, endpoint)
         sys.exit(0 if files is not None else 1)
+
+    # Handle generic file upload
+    if args.upload_files:
+        folder_path = args.media_folder
+        if not folder_path:
+            print("Error: Need --media-folder for file upload")
+            sys.exit(1)
+
+        if not args.bucket_id:
+            print("Error: Need --bucket-id for file upload")
+            sys.exit(1)
+
+        permissions = None
+        if args.file_permissions:
+            try:
+                permissions = json.loads(args.file_permissions)
+            except json.JSONDecodeError:
+                print("Error: Invalid JSON format for --file-permissions")
+                sys.exit(1)
+
+        skip_duplicates = not args.no_skip_duplicates
+        overwrite = args.overwrite
+
+        if skip_duplicates and overwrite:
+            print("Error: Cannot use both --skip-duplicates and --overwrite. Choose one approach.")
+            sys.exit(1)
+
+        successful_uploads = bulk_upload_files_from_folder(
+            session,
+            project_id,
+            args.bucket_id,
+            folder_path,
+            endpoint,
+            permissions=permissions,
+            skip_duplicates=skip_duplicates,
+            overwrite=overwrite
+        )
+
+        sys.exit(0 if successful_uploads else 1)
 
     # Handle media upload (new unified approach)
     if args.upload_media or args.upload_videos:
