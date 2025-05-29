@@ -13,6 +13,7 @@ A Python-based command-line tool for interacting with Appwrite databases and col
 - Team management functionality
 - Support for SSL verification toggle
 - Upload files to Appwrite storage buckets
+- Image file paths in YAML are uploaded to storage and replaced with their IDs
 
 ## Prerequisites
 
@@ -116,7 +117,12 @@ Parent:
       child_ref2:
         value: *child_anchor2
         relation: "oneToMany"
+      images:
+        - ./images/property_image_1.jpg
+        - ./images/property_image_2.jpg
 ```
+When `--bucket-id` is provided, these image paths are uploaded before the parent
+document is created and the list is replaced with the resulting file IDs.
 
 ### Team Management
 

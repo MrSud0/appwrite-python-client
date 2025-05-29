@@ -310,7 +310,37 @@ def bulk_update_documents_with_session(session, yaml_file, project_id, database_
         for error in errors:
             print(f"- {error}")
 
-def create_documents_with_relationships(session, yaml_file, project_id, database_id, collection_mapping, endpoint):
+def _process_images_field(data, session, project_id, bucket_id, endpoint, yaml_dir):
+    """Upload image file paths in data and replace them with file IDs."""
+    if not bucket_id or 'images' not in data or not isinstance(data['images'], list):
+        return
+
+    processed_images = []
+    for img in data['images']:
+        img_path = Path(str(img))
+        if not img_path.is_absolute():
+            img_path = Path(yaml_dir) / img_path
+
+        if img_path.exists():
+            result = upload_file_to_bucket_with_duplicate_check(
+                session,
+                project_id,
+                bucket_id,
+                img_path,
+                endpoint
+            )
+            if result and not result.get('skipped'):
+                processed_images.append(result['$id'])
+            elif result and result.get('skipped'):
+                existing = find_file_by_name_paginated(session, project_id, bucket_id, img_path.name, endpoint)
+                if existing:
+                    processed_images.append(existing['$id'])
+        else:
+            processed_images.append(str(img))
+
+    data['images'] = processed_images
+
+def create_documents_with_relationships(session, yaml_file, project_id, database_id, collection_mapping, endpoint, bucket_id=None):
     """
     Process a YAML file with a Children/Parent structure.
 
@@ -323,6 +353,11 @@ def create_documents_with_relationships(session, yaml_file, project_id, database
           Each item is a mapping with keys:
              - collection_name: the name of the parent collection (e.g., "nezuko")
              - data: a dictionary containing relationship fields that reference one of the child definitions via YAML anchors.
+
+    If `bucket_id` is provided and a parent `data` dictionary contains an `images`
+    field with file paths, those images will be uploaded to the specified bucket
+    and replaced with their resulting file IDs before the parent document is
+    created.
     """
     yaml_data = load_yaml_data(yaml_file)
     if not ("Children" in yaml_data and "Parent" in yaml_data):
@@ -371,6 +406,9 @@ def create_documents_with_relationships(session, yaml_file, project_id, database
                         data[key] = child_doc_id
                 else:
                     print(f"Could not find a matching child for field '{key}'.")
+
+        # Handle image uploads if needed
+        _process_images_field(data, session, project_id, bucket_id, endpoint, Path(yaml_file).parent)
         if coll_name not in collection_mapping:
             print(f"Collection name '{coll_name}' not found in collection mapping for parent. Skipping.")
             continue
@@ -1249,7 +1287,15 @@ if __name__ == "__main__":
             "InvestmentStrategy": "67e94032001f3cdd2781",
             "InvestmentStrategyHighlights": "67e940800002fb4d894a",
         }
-        create_documents_with_relationships(session, args.yaml_file, project_id, args.database_id, collection_mapping, endpoint)
+        create_documents_with_relationships(
+            session,
+            args.yaml_file,
+            project_id,
+            args.database_id,
+            collection_mapping,
+            endpoint,
+            bucket_id=args.bucket_id,
+        )
         sys.exit(0)    
 
     # Handle bulk document creation with session
